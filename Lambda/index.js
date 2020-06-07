@@ -19,18 +19,23 @@ exports.handler = function (event, context, callback) {
             "key": { "S": event.key },
             "name": { "S": event.name },
             "email": { "S": event.email },
-            "message": { "S": event.message }
+            "message": { "S": event.message },
+            "created": { "S": (new Date()).toUTCString() },
+            "processeddate": { "S": '' },
+            "isprocessed": { "N": '0' },
+            "haserror": { "N": '0' },
+            "errorstack": { "S": '' }
         }
     }
     log(event.key, '1', "About to persist to db.");
     dynamodb.putItem(params, function (err, data) {
         if (err) {
+            setFormProcessed(event.key, '0', '1', err.stack);
             log(event.key, '1', "Error:  " + err.stack)
-            //console.log(err, err.stack); // an error occurred
         }
         else {
-            log(event.key, '1', "Success:  " + data)
-            //console.log(data); // successful response
+            setFormProcessed(event.key, '1', '0', '');
+            log(event.key, '1', "Success:  " + data);
         }
     });
 
@@ -79,4 +84,30 @@ function log(key, typeid, msg) {
             console.log(data); // successful response
         }
     });
+};
+
+function setFormProcessed(key, isprocessed, haserror, errorstack) {
+    // fetch the item with the key from table
+    var docClient = new AWS.DynamoDB.DocumentClient();
+    var params = {
+        TableName: "forms",
+        Key: {
+            key: key
+        },
+        UpdateExpression: "set isprocessed = :isprocessed, processeddate = :processeddate, haserror = :haserror, errorstack = :errorstack",
+        ExpressionAttributeValues: {
+            ":isprocessed": isprocessed,
+            ":processeddate": (new Date()).toUTCString(),
+            ":haserror": haserror,
+            ":errorstack": errorstack
+        }
+    };
+    docClient.update(params, function (err, data) {
+        if (err) {
+            console.error("Unable to update item. Error JSON:", JSON.stringify(err, null, 2));
+        } else {
+            console.log("UpdateItem succeeded:", JSON.stringify(data, null, 2));
+        }
+    });
+
 };
