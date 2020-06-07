@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { v4 as uuidv4 } from 'uuid';
 
 import {
   FormControl,
@@ -52,7 +52,31 @@ class Contact extends React.Component {
         Full Name:  ${this.state.fullName}
         Email:  ${this.state.email}
         Message:  ${this.state.message}
-        `)
+        `);
+        var data = {
+          key:  uuidv4(),
+          name:  this.state.fullName,
+          email:  this.state.email,
+          message:  this.state.message
+        };
+
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.open("POST", "https://pibw6aoxpb.execute-api.us-east-1.amazonaws.com/api/email");
+        xmlhttp.setRequestHeader("Content-Type", "application/json");
+        xmlhttp.send(JSON.stringify(data));
+        xmlhttp.onreadystatechange = function() {
+          if (xmlhttp.readyState === 4) {
+            var response = JSON.parse(xmlhttp.responseText);
+            console.log('Response:  ' + response);
+            if (xmlhttp.status === 200) {
+              console.log('successful');
+              document.getElementById("contact-form").innerHTML = "<h1>Thank you for your message.  It was sent successfully.</h1>";
+            }
+            else {
+              console.log('failed');
+            }
+          }
+        }
     }
     else {
       console.error('FORM INVALID - DISPLAY ERROR MESSAGE')
@@ -67,13 +91,13 @@ class Contact extends React.Component {
 
     switch (name) {
       case 'fullName':
-        formErrors.fullName = value.length < 3 ? 'minimum 3 characters required' : "";
+        formErrors.fullName = value.length < 3 ? 'Please enter a name' : "";
         break;
       case 'email':
-        formErrors.email = emailRegex.test(value) ? '' : 'invalid email address';
+        formErrors.email = emailRegex.test(value) ? '' : 'Please enter email';
         break;
       case 'message':
-        formErrors.message = value.length < 3  ? 'minimum 3 characters required' : "";
+        formErrors.message = value.length < 3  ? 'Please enter message' : "";
         break;
       default:
         break;
@@ -94,12 +118,12 @@ class Contact extends React.Component {
           padding: 20
         }}
       >
-        <form style={{ width: "50%" }} noValidate onSubmit={this.handlSubmit}>
+        <form id="contact-form" style={{ width: "50%" }} noValidate onSubmit={this.handlSubmit}>
           <h1>Contact Form</h1>
 
           <FormControl margin="normal" fullWidth>
             <InputLabel htmlFor="name">Name</InputLabel>
-            <Input id="name" type="text" name="fullName" placeholder="Full Name" onChange={this.handleChange} noValidate  className={formErrors.fullName.length > 0 ? "error" : null} />
+            <Input id="name" type="text" name="fullName" placeholder="Full name" onChange={this.handleChange} noValidate  className={formErrors.fullName.length > 0 ? "error" : null} />
             {formErrors.fullName.length > 0 && (
                 <span className="errorMessage">{formErrors.fullName}</span>
               )}
@@ -107,7 +131,7 @@ class Contact extends React.Component {
           
           <FormControl margin="normal" fullWidth>
             <InputLabel htmlFor="email">Email</InputLabel>
-            <Input id="email" type="email" name="email" placeholder="Email" onChange={this.handleChange} noValidate />
+            <Input id="email" type="email" name="email" placeholder="Enter email" onChange={this.handleChange} noValidate />
             {formErrors.email.length > 0 && (
                 <span className="errorMessage">{formErrors.email}</span>
               )}
